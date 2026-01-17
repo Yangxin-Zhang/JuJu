@@ -119,26 +119,6 @@ add_new_col_to_data_table <- function(original_data_table,
       comp_na_2 <- paste(group_1[,`group-1`],group_2[,`group-2`],sep = "-")
       group_2[,comparition := comp_na_2]
 
-      group_1[,x_from := group_1[,`group-1`]]
-      group_2[,x_from := group_1[,`group-1`]]
-      group_1[,x_to := group_2[,`group-2`]]
-      group_2[,x_to := group_2[,`group-2`]]
-
-      group_1[,y_from := (group_1[,`mean.group-1`])*1.1]
-      group_2[,y_from := (group_2[,`mean.group-2`])*1.1]
-
-      if (group_1[,`mean.group-1`] >= group_2[,`mean.group-2`]) {
-
-        group_1[,y_to := (group_1[,`mean.group-1`])*1.2]
-        group_2[,y_to := (group_1[,`mean.group-1`])*1.2]
-
-      } else {
-
-        group_1[,y_to := (group_2[,`mean.group-2`])*1.2]
-        group_2[,y_to := (group_2[,`mean.group-2`])*1.2]
-
-      }
-
       merge_group <- rbindlist(list(group_1,group_2))
 
       plotting_cols <- colnames(merge_group)[!colnames(merge_group) %in% c("mean.group-1","mean.group-2","group-1","group-2","st.err")]
