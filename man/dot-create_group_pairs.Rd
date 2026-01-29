@@ -4,10 +4,18 @@
 \alias{.create_group_pairs}
 \title{create group pairs}
 \usage{
-.create_group_pairs(group_list)
+.create_group_pairs(
+  group_list,
+  annotate_interval = FALSE,
+  group_order = character()
+)
 }
 \arguments{
 \item{group_list}{the group list}
+
+\item{annotate_interval}{annotate the interval}
+
+\item{group_order}{the group order}
 }
 \description{
 create group pairs

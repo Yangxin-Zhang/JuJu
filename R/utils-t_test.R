@@ -58,8 +58,13 @@ conduct_t_test_JuJu <- function(dataset_dt,
   mean_group_2 <- numeric()
   standard_error <- numeric()
   test_method <- character()
+  highest_group_1 <- numeric()
+  highest_group_2 <- numeric()
+  lowest_group_1 <- numeric()
+  lowest_group_2 <- numeric()
   for (i in 1:length(test_cols)) {
 
+    aim_col <- test_cols[i]
     sub_test_result <- test_result[[test_cols[i]]]
 
     t_value <- c(t_value,sub_test_result$statistic)
@@ -70,6 +75,10 @@ conduct_t_test_JuJu <- function(dataset_dt,
     mean_group_2 <- c(mean_group_2,sub_test_result$estimate["mean of y"])
     standard_error <- c(standard_error,sub_test_result$stderr)
     test_method <- c(test_method,sub_test_result$method)
+    highest_group_1 <- c(highest_group_1,quantile(unlist(dataset_dt[group_symbol == group_symbol_1,..aim_col]),0.75))
+    highest_group_2 <- c(highest_group_2,quantile(unlist(dataset_dt[group_symbol == group_symbol_2,..aim_col]),0.75))
+    lowest_group_1 <- c(lowest_group_1,quantile(unlist(dataset_dt[group_symbol == group_symbol_1,..aim_col]),0.25))
+    lowest_group_2 <- c(lowest_group_2,quantile(unlist(dataset_dt[group_symbol == group_symbol_2,..aim_col]),0.25))
 
   }
 
@@ -84,7 +93,11 @@ conduct_t_test_JuJu <- function(dataset_dt,
                                "group-1" = rep(group_symbol_1,times = length(test_cols)),
                                "group-2" = rep(group_symbol_2,times = length(test_cols)),
                                "st.err" = standard_error,
-                               "test.method" = test_method)
+                               "test.method" = test_method,
+                               "Q2.group-1" = lowest_group_1,
+                               "Q3.group-1" = highest_group_1,
+                               "Q2.group-2" = lowest_group_2,
+                               "Q3.group-2" = highest_group_2)
 
   return(test_result_dt)
 
@@ -99,12 +112,19 @@ conduct_t_test_JuJu <- function(dataset_dt,
 
 conduct_t_test_each_JuJu <- function(test_dataset,
                                      group_col,
-                                     test_mode = "two.sided")
+                                     test_mode = "two.sided",
+                                     test_cols = character())
   {
 
   on.exit(gc())
 
-  test_cols <- JuJu:::.choose_test_cols(dt = test_dataset)
+  test_dataset <- as.data.table(test_dataset)
+
+  if (length(test_cols) == 0) {
+
+    test_cols <- JuJu:::.choose_test_cols(dt = test_dataset)
+
+  }
 
   dataset_dt <- copy(test_dataset)
 
