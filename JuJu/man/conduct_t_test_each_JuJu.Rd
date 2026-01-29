@@ -4,7 +4,12 @@
 \alias{conduct_t_test_each_JuJu}
 \title{conduct t test}
 \usage{
-conduct_t_test_each_JuJu(test_dataset, group_col, test_mode = "two.sided")
+conduct_t_test_each_JuJu(
+  test_dataset,
+  group_col,
+  test_mode = "two.sided",
+  test_cols = character()
+)
 }
 \arguments{
 \item{test_dataset}{the data table}

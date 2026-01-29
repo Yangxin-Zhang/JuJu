@@ -64,11 +64,43 @@ add_new_col_to_data_table <- function(original_data_table,
 #' create group pairs
 #'
 #' @param group_list the group list
+#' @param group_order the group order
+#' @param annotate_interval annotate the interval
 
-.create_group_pairs <- function(group_list)
+.create_group_pairs <- function(group_list,
+                                annotate_interval = FALSE,
+                                group_order = character())
   {
 
   on.exit(gc())
+
+  annotate_pair_interval <- function(res_pairs,
+                                     group_order){
+
+    for (i in 1:length(res_pairs)) {
+
+      sub_pair <- res_pairs[[i]]
+      loc_pair_1 <- which(group_order == sub_pair[1]) %>%
+        as.numeric()
+      loc_pair_2 <- which(group_order == sub_pair[2]) %>%
+        as.numeric()
+
+      pair_interval <- loc_pair_1 - loc_pair_2
+
+      if (pair_interval > 0) {
+
+        sub_pair <- c(sub_pair[2],sub_pair[1])
+        res_pairs[[i]] <- list(sub_pair)
+
+      }
+
+      names(res_pairs)[i] <- paste(names(res_pairs[i]),abs(pair_interval),sep = "-")
+
+    }
+
+    return(res_pairs)
+
+  }
 
   group_pairs <- combn(group_list,2)
 
@@ -78,6 +110,29 @@ add_new_col_to_data_table <- function(original_data_table,
 
     res_pairs[pairs_na[i]] <- list(group_pairs[,i])
 
+  }
+
+  if (annotate_interval == TRUE) {
+
+    if (length(group_order) == length(group_list)) {
+
+      if (all(group_order %in% group_list)) {
+
+        res_pairs <- annotate_pair_interval(res_pairs = res_pairs,
+                                            group_order = group_order)
+
+      } else {
+
+        res_pairs <- annotate_pair_interval(res_pairs = res_pairs,
+                                            group_order = group_list)
+
+      }
+    } else {
+
+      res_pairs <- annotate_pair_interval(res_pairs = res_pairs,
+                                          group_order = group_list)
+
+    }
   }
 
   return(res_pairs)
@@ -110,6 +165,15 @@ add_new_col_to_data_table <- function(original_data_table,
 
       group_1[,mean := `mean.group-1`]
       group_2[,mean := `mean.group-2`]
+
+      group_1[,Q2 := `Q2.group-1`]
+      group_1[,Q3 := `Q3.group-1`]
+
+      group_2[,Q2 := `Q2.group-2`]
+      group_2[,Q3 := `Q3.group-2`]
+
+      group_1[,facet_group := paste(`group-1`,variable.name,sep = "-")]
+      group_2[,facet_group := paste(`group-2`,variable.name,sep = "-")]
 
       group_1[,group := `group-1`]
       group_2[,group := `group-2`]
