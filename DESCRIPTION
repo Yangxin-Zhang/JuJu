@@ -1,9 +1,10 @@
 Package: JuJu
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Statistical Analysis-JuJu
+Version: 1.0.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Yangxin", "Zhang", email =  "910858193@qq.com", role = c("aut", "cre"))
+    person("Jiaixin", "Jiang", email "1580314607@qq.com", role = c("ctb"))
+Description: Conduct statistical analysis for academic article.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

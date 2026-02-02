@@ -8,7 +8,12 @@ conduct_t_test_each_JuJu(
   test_dataset,
   group_col,
   test_mode = "two.sided",
-  test_cols = character()
+  test_cols = character(),
+  var.equal = FALSE,
+  paired = FALSE,
+  conf.level = 0.95,
+  normality = TRUE,
+  simplify = FALSE
 )
 }
 \arguments{

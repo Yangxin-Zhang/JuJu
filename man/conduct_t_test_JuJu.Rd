@@ -10,7 +10,12 @@ conduct_t_test_JuJu(
   group_symbol_1,
   group_symbol_2,
   test_mode = "two.sided",
-  test_cols = character()
+  test_cols = character(),
+  var.equal = FALSE,
+  paired = FALSE,
+  conf.level = 0.95,
+  normalize = TRUE,
+  simplify = FALSE
 )
 }
 \arguments{

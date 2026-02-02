@@ -240,3 +240,71 @@ add_new_col_to_data_table <- function(original_data_table,
   return(sig_stars)
 
 }
+
+#' read entire excel
+#'
+#' @param path the file path
+#' @export
+
+read_entire_excel_JuJu <- function(path)
+  {
+
+  sheet_names <- excel_sheets(path)
+  names(sheet_names) <- sheet_names
+
+  excel_dataset <- lapply(sheet_names,function(sheet_na,
+                                               path){
+
+    return(as.data.table(read_excel(path = path,
+                                    sheet = sheet_na)))
+
+  },
+  path)
+
+  return(excel_dataset)
+
+}
+
+#' convert a dataset to short form
+#'
+#' @param dt the data.table
+#' @param col the change col
+#' @param save_cols the saving cols
+#' @export
+
+convet_dataset_to_short_form_JuJu <- function(dt,
+                                              col,
+                                              save_cols)
+  {
+
+  on.exit(gc())
+
+  dt <- as.data.table(dt)
+
+  aim_cols <- dt[,..col] %>%
+    unlist() %>%
+    unique()
+
+  row_na <- colnames(dt)
+  row_na <- row_na[!row_na %in% c(col,save_cols)]
+
+  col_value <- dt[,..col]
+  dt[,aim_col := col_value]
+
+  new_dt_ls <- JuJu:::.create_results_list(aim_cols)
+  new_dt_ls["saving_col"] <- list(dt[aim_col == aim_cols[1],..save_cols])
+  for (i in 1:length(aim_cols)) {
+
+    new_row_na <- paste(row_na,aim_cols[i],sep = "_")
+
+    new_dt <- dt[aim_col == aim_cols[i],..row_na]
+
+    colnames(new_dt) <- new_row_na
+
+    new_dt_ls[aim_cols[i]] <- list(new_dt)
+
+  }
+
+  return(bind_cols(new_dt_ls))
+
+}

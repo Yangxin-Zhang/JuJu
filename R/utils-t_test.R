@@ -16,7 +16,12 @@ conduct_t_test_JuJu <- function(dataset_dt,
                                 group_symbol_1,
                                 group_symbol_2,
                                 test_mode = "two.sided",
-                                test_cols = character())
+                                test_cols = character(),
+                                var.equal = FALSE,
+                                paired = FALSE,
+                                conf.level = 0.95,
+                                normalize = TRUE,
+                                simplify = FALSE)
   {
 
   on.exit(gc())
@@ -31,6 +36,26 @@ conduct_t_test_JuJu <- function(dataset_dt,
 
   }
 
+  if (length(var.equal) != length(test_cols)) {
+
+    test_col_str <- paste(test_cols,collapse = " ")
+    var.equal <- rep(var.equal[1],
+                     times = length(test_cols))
+
+    cat("pairs:",group_symbol_1,group_symbol_2,"\n",sep = " ")
+    cat("test_cols:",test_col_str,"\n",sep = " ")
+    cat("var.equal = ",var.equal[1],"\n")
+
+  } else {
+
+    test_col_str <- paste(test_cols,collapse = " ")
+    var.equal_str <- paste(var.equal,collapse = " ")
+    cat("pairs:",group_symbol_1,group_symbol_2,"\n",sep = " ")
+    cat("test_cols:",test_col_str,"\n",sep = " ")
+    cat("var.equal:",var.equal_str,"\n",sep = " ")
+
+  }
+
   test_result <- JuJu:::.create_results_list(test_cols)
 
   for (i in 1:length(test_cols)) {
@@ -41,13 +66,25 @@ conduct_t_test_JuJu <- function(dataset_dt,
                                                   new_col = dataset_dt[,..aim_col],
                                                   new_col_name = "test_col")
 
-    test_result[aim_col] <- list(t.test(dataset_dt[group_symbol == group_symbol_1,test_col],
-                                        dataset_dt[group_symbol == group_symbol_2,test_col],
-                                        alternative = test_mode,
-                                        paired = FALSE,
-                                        var.equal = FALSE,
-                                        conf.level = 0.95))
+    if (normalize) {
 
+      test_result[aim_col] <- list(t.test(dataset_dt[group_symbol == group_symbol_1,test_col],
+                                          dataset_dt[group_symbol == group_symbol_2,test_col],
+                                          alternative = test_mode,
+                                          paired = paired,
+                                          var.equal = var.equal[i],
+                                          conf.level = conf.level))
+
+    } else {
+
+      test_result[aim_col] <- list(wilcox.test(dataset_dt[group_symbol == group_symbol_1,test_col],
+                                               dataset_dt[group_symbol == group_symbol_2,test_col],
+                                               alternative = test_mode,
+                                               paired = paired,
+                                               conf.level = conf.level,
+                                               conf.int = TRUE))
+
+    }
   }
 
   t_value <- numeric()
@@ -62,6 +99,8 @@ conduct_t_test_JuJu <- function(dataset_dt,
   highest_group_2 <- numeric()
   lowest_group_1 <- numeric()
   lowest_group_2 <- numeric()
+  var.equal_ls <- logical()
+  test.statistic <- character()
   for (i in 1:length(test_cols)) {
 
     aim_col <- test_cols[i]
@@ -71,35 +110,88 @@ conduct_t_test_JuJu <- function(dataset_dt,
     p_value <- c(p_value,sub_test_result$p.value)
     conf_int_lower <- c(conf_int_lower,sub_test_result$conf.int[1])
     conf_int_upper <- c(conf_int_upper,sub_test_result$conf.int[2])
-    mean_group_1 <- c(mean_group_1,sub_test_result$estimate["mean of x"])
-    mean_group_2 <- c(mean_group_2,sub_test_result$estimate["mean of y"])
-    standard_error <- c(standard_error,sub_test_result$stderr)
+    mean_group_1 <- c(mean_group_1,mean(unlist(dataset_dt[group_symbol == group_symbol_1,..aim_col])))
+    mean_group_2 <- c(mean_group_2,mean(unlist(dataset_dt[group_symbol == group_symbol_2,..aim_col])))
     test_method <- c(test_method,sub_test_result$method)
     highest_group_1 <- c(highest_group_1,quantile(unlist(dataset_dt[group_symbol == group_symbol_1,..aim_col]),0.75))
     highest_group_2 <- c(highest_group_2,quantile(unlist(dataset_dt[group_symbol == group_symbol_2,..aim_col]),0.75))
     lowest_group_1 <- c(lowest_group_1,quantile(unlist(dataset_dt[group_symbol == group_symbol_1,..aim_col]),0.25))
     lowest_group_2 <- c(lowest_group_2,quantile(unlist(dataset_dt[group_symbol == group_symbol_2,..aim_col]),0.25))
+    var.equal_ls <- c(var.equal_ls,var.equal[i])
+    test.statistic <- c(test.statistic,names(sub_test_result$statistic))
+
+    if (normalize) {
+
+      standard_error <- c(standard_error,sub_test_result$stderr)
+
+    }
 
   }
 
-  test_result_dt <- data.table("variable.name" = test_cols,
-                               "t.value" = t_value,
-                               "p.value" = p_value,
-                               "CI.lower" = conf_int_lower,
-                               "CI.upper" = conf_int_upper,
-                               "mean.group-1" = mean_group_1,
-                               "mean.group-2" = mean_group_2,
-                               "mean.diff" = (mean_group_1 - mean_group_2),
-                               "group-1" = rep(group_symbol_1,times = length(test_cols)),
-                               "group-2" = rep(group_symbol_2,times = length(test_cols)),
-                               "st.err" = standard_error,
-                               "test.method" = test_method,
-                               "Q2.group-1" = lowest_group_1,
-                               "Q3.group-1" = highest_group_1,
-                               "Q2.group-2" = lowest_group_2,
-                               "Q3.group-2" = highest_group_2)
+  if (normalize) {
 
-  return(test_result_dt)
+    test_result_dt <- data.table("variable.name" = test_cols,
+                                 "t.value" = t_value,
+                                 "p.value" = p_value,
+                                 "var.equal" = var.equal_ls,
+                                 "CI.lower" = conf_int_lower,
+                                 "CI.upper" = conf_int_upper,
+                                 "mean.group-1" = mean_group_1,
+                                 "mean.group-2" = mean_group_2,
+                                 "mean.diff" = (mean_group_1 - mean_group_2),
+                                 "group-1" = rep(group_symbol_1,times = length(test_cols)),
+                                 "group-2" = rep(group_symbol_2,times = length(test_cols)),
+                                 "st.err" = standard_error,
+                                 "test.method" = test_method,
+                                 "test.statistic" = test.statistic,
+                                 "Q2.group-1" = lowest_group_1,
+                                 "Q3.group-1" = highest_group_1,
+                                 "Q2.group-2" = lowest_group_2,
+                                 "Q3.group-2" = highest_group_2)
+
+  } else {
+
+    test_result_dt <- data.table("variable.name" = test_cols,
+                                 "t.value" = t_value,
+                                 "p.value" = p_value,
+                                 "var.equal" = var.equal_ls,
+                                 "CI.lower" = conf_int_lower,
+                                 "CI.upper" = conf_int_upper,
+                                 "mean.group-1" = mean_group_1,
+                                 "mean.group-2" = mean_group_2,
+                                 "mean.diff" = (mean_group_1 - mean_group_2),
+                                 "group-1" = rep(group_symbol_1,times = length(test_cols)),
+                                 "group-2" = rep(group_symbol_2,times = length(test_cols)),
+                                 "test.method" = test_method,
+                                 "test.statistic" = test.statistic,
+                                 "Q2.group-1" = lowest_group_1,
+                                 "Q3.group-1" = highest_group_1,
+                                 "Q2.group-2" = lowest_group_2,
+                                 "Q3.group-2" = highest_group_2)
+
+  }
+
+  if (simplify) {
+
+    test_result_dt[,statistic.value := t.value]
+    test_result_dt[,group := paste(`group-1`,`group-2`,sep = "-")]
+    test_result_dt[,var.equal := var.equal_ls]
+
+    test_result_dt <- test_result_dt[,c("variable.name",
+                                        "statistic.value",
+                                        "p.value",
+                                        "test.statistic",
+                                        "test.method",
+                                        "group",
+                                        "var.equal")]
+
+    return(test_result_dt)
+
+  } else {
+
+    return(test_result_dt)
+
+  }
 
 }
 
@@ -113,7 +205,12 @@ conduct_t_test_JuJu <- function(dataset_dt,
 conduct_t_test_each_JuJu <- function(test_dataset,
                                      group_col,
                                      test_mode = "two.sided",
-                                     test_cols = character())
+                                     test_cols = character(),
+                                     var.equal = FALSE,
+                                     paired = FALSE,
+                                     conf.level = 0.95,
+                                     normality = TRUE,
+                                     simplify = FALSE)
   {
 
   on.exit(gc())
@@ -166,7 +263,12 @@ conduct_t_test_each_JuJu <- function(test_dataset,
                                                                   test_cols = testing_cols,
                                                                   group_symbol_1 = group_pairs[[group_pairs_na[i]]][1],
                                                                   group_symbol_2 = group_pairs[[group_pairs_na[i]]][2],
-                                                                  group_col = "group_symbol_copy") %>%
+                                                                  group_col = "group_symbol_copy",
+                                                                  var.equal = var.equal,
+                                                                  paired = paired,
+                                                                  conf.level = conf.level,
+                                                                  normalize = normality,
+                                                                  simplify = simplify) %>%
         list()
 
     }
